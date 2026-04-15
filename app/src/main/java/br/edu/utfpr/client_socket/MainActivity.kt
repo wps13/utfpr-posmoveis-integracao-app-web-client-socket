@@ -40,39 +40,44 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btEnviarOnClick(view: View) {
-        val ip = "10.0.2.2"
-        val port = 12345
-        var protocol = ""
+        Thread {
+            val ip = "10.0.2.2"
+            val port = 12345
+            var protocol = ""
 
-        try {
-            clientSocket = Socket(ip, port) // linha bloqueante
-            // Conectado com server
+            try {
+                clientSocket = Socket(ip, port) // linha bloqueante
+                // Conectado com server
 
-            val outputStream =
-                clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-            val inputStream = clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-            // Fluxo de IO criado
+                val outputStream =
+                    clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
+                val inputStream =
+                    clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
+                // Fluxo de IO criado
 
-            when (rbHora.isChecked) {
-                true -> protocol = "hora"
-                false -> protocol = "data"
+                when (rbHora.isChecked) {
+                    true -> protocol = "hora"
+                    false -> protocol = "data"
+                }
+
+                outputStream.write(protocol + "\n")
+                outputStream.flush()
+                // mensagem enviada ao servidor, sem bloqueios
+
+                val result = inputStream.readLine() // linha bloqueante
+                // mensagem recebida do servidor
+
+                runOnUiThread {
+                    tvResultado.text = result
+                }
+
+            } catch (e: Exception) {
+                runOnUiThread {
+                    tvResultado.text = "Erro: " + e.message
+                }
+            } finally {
+                clientSocket.close()
             }
-
-            outputStream.write(protocol + "\n")
-            outputStream.flush()
-            // mensagem enviada ao servidor, sem bloqueios
-
-            val result = inputStream.readLine() // linha bloqueante
-            // mensagem recebida do servidor
-            tvResultado.text = result
-        } catch (e: Exception) {
-
-        } finally {
-
-        }
-
-        Toast
-            .makeText(this, protocol, Toast.LENGTH_SHORT)
-            .show()
+        }.start()
     }
 }
