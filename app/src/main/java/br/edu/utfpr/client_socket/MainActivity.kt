@@ -3,6 +3,7 @@ package br.edu.utfpr.client_socket
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rbHora: RadioButton
     private lateinit var btEnviar: Button
     private lateinit var tvResultado: TextView
+
+    private lateinit var progressBar: ProgressBar
 
     private lateinit var clientSocket: Socket
     private lateinit var inputStream: BufferedReader
@@ -39,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         rbHora = findViewById(R.id.rbHora)
         btEnviar = findViewById(R.id.btEnviar)
         tvResultado = findViewById(R.id.tvResultado)
+        progressBar = findViewById(R.id.progressBar)
 
     }
 
@@ -48,6 +52,13 @@ class MainActivity : AppCompatActivity() {
             val port = 12345
 
             try {
+                runOnUiThread {
+                    progressBar.visibility = View.VISIBLE
+                    btEnviar.isEnabled = false
+                }
+
+                Thread.sleep(1000)
+
                 if (!::clientSocket.isInitialized) {
                     clientSocket = Socket(ip, port) // linha bloqueante
                     // Conectado com server
@@ -79,6 +90,10 @@ class MainActivity : AppCompatActivity() {
                     tvResultado.text = "Erro: " + e.message
                 }
             } finally {
+                runOnUiThread {
+                    progressBar.visibility = View.GONE
+                    btEnviar.isEnabled = true
+                }
             }
         }.start()
     }
