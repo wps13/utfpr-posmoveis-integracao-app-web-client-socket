@@ -5,11 +5,12 @@ import android.view.View
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.net.Socket
 import java.nio.charset.Charset
 
@@ -20,6 +21,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvResultado: TextView
 
     private lateinit var clientSocket: Socket
+    private lateinit var inputStream: BufferedReader
+    private lateinit var outputStream: BufferedWriter
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,21 +46,21 @@ class MainActivity : AppCompatActivity() {
         Thread {
             val ip = "10.0.2.2"
             val port = 12345
-            var protocol = ""
 
             try {
-                clientSocket = Socket(ip, port) // linha bloqueante
-                // Conectado com server
+                if (!::clientSocket.isInitialized) {
+                    clientSocket = Socket(ip, port) // linha bloqueante
+                    // Conectado com server
+                    outputStream =
+                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
+                    inputStream =
+                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
+                    // Fluxo de IO criado
+                }
 
-                val outputStream =
-                    clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-                val inputStream =
-                    clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                // Fluxo de IO criado
-
-                when (rbHora.isChecked) {
-                    true -> protocol = "hora"
-                    false -> protocol = "data"
+                val protocol = when (rbHora.isChecked) {
+                    true -> "hora"
+                    false -> "data"
                 }
 
                 outputStream.write(protocol + "\n")
@@ -76,8 +79,12 @@ class MainActivity : AppCompatActivity() {
                     tvResultado.text = "Erro: " + e.message
                 }
             } finally {
-                clientSocket.close()
             }
         }.start()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        clientSocket.close()
     }
 }
