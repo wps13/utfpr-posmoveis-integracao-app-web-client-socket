@@ -48,8 +48,8 @@ class MainActivity : AppCompatActivity() {
 
     fun btEnviarOnClick(view: View) {
         Thread {
-            val ip = "10.0.2.2"
-            val port = 12345
+            val ip = BuildConfig.SERVER_IP
+            val port = BuildConfig.SERVER_PORT
 
             try {
                 runOnUiThread {
