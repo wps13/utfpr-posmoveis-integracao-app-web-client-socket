@@ -1,5 +1,6 @@
 package br.edu.utfpr.client_socket
 
+import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -47,59 +48,97 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun btEnviarOnClick(view: View) {
-        Thread {
-            val ip = BuildConfig.SERVER_IP
-            val port = BuildConfig.SERVER_PORT
 
-            try {
-                runOnUiThread {
-                    progressBar.visibility = View.VISIBLE
-                    btEnviar.isEnabled = false
-                }
-
-                Thread.sleep(1000)
-
-                if (!::clientSocket.isInitialized) {
-                    clientSocket = Socket(ip, port) // linha bloqueante
-                    // Conectado com server
-                    outputStream =
-                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-                    inputStream =
-                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                    // Fluxo de IO criado
-                }
-
-                val protocol = when (rbHora.isChecked) {
-                    true -> "hora"
-                    false -> "data"
-                }
-
-                outputStream.write(protocol + "\n")
-                outputStream.flush()
-                // mensagem enviada ao servidor, sem bloqueios
-
-                val result = inputStream.readLine() // linha bloqueante
-                // mensagem recebida do servidor
-
-                runOnUiThread {
-                    tvResultado.text = result
-                }
-
-            } catch (e: Exception) {
-                runOnUiThread {
-                    tvResultado.text = "Erro: " + e.message
-                }
-            } finally {
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btEnviar.isEnabled = true
-                }
-            }
-        }.start()
+        val protocol = when (rbHora.isChecked) {
+            true -> "hora"
+            false -> "data"
+        }
+        ConexaoTask().execute(protocol)
     }
 
     override fun onStop() {
         super.onStop()
         clientSocket.close()
+    }
+
+    inner class ConexaoTask : AsyncTask<String, Int, String>() {
+        override fun onPreExecute() {
+            progressBar.visibility = View.VISIBLE
+            btEnviar.isEnabled = false
+        }
+
+        override fun doInBackground(vararg protocol: String?): String? {
+            try {
+                Thread.sleep(1000)
+                if (!::clientSocket.isInitialized) {
+
+                    val ip = BuildConfig.SERVER_IP
+                    val port = BuildConfig.SERVER_PORT
+
+                    publishProgress(1)
+                    Thread.sleep(1000)
+
+                    clientSocket = Socket(ip, port) // linha bloqueante
+                    // Conectado com server
+
+                    publishProgress(2)
+                    Thread.sleep(1000)
+
+                    outputStream =
+                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
+
+                    publishProgress(3)
+                    Thread.sleep(1000)
+
+                    inputStream =
+                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
+                    // Fluxo de IO criado
+
+                    publishProgress(4)
+                    Thread.sleep(1000)
+                }
+
+                outputStream.write(protocol[0] + "\n")
+
+                publishProgress(5)
+                Thread.sleep(1000)
+
+                outputStream.flush()
+                // mensagem enviada ao servidor, sem bloqueios
+
+                publishProgress(6)
+                Thread.sleep(1000)
+                val result = inputStream.readLine() // linha bloqueante
+                // mensagem recebida do servidor
+
+                publishProgress(7)
+                Thread.sleep(1000)
+
+                publishProgress(8)
+                Thread.sleep(1000)
+
+                publishProgress(9)
+                Thread.sleep(1000)
+
+                publishProgress(10)
+                Thread.sleep(1000)
+
+                return result
+            } catch (e: Exception) {
+                return e.message
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            tvResultado.text = result
+            progressBar.visibility = View.GONE
+            btEnviar.isEnabled = true
+
+        }
+
+        override fun onProgressUpdate(vararg progresso: Int?) {
+            super.onProgressUpdate(*progresso)
+            progressBar.setProgress(progresso[0] ?: 0)
+        }
     }
 }
