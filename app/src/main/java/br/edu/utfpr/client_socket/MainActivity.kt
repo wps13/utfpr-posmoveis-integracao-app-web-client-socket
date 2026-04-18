@@ -1,6 +1,5 @@
 package br.edu.utfpr.client_socket
 
-import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -11,6 +10,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.Socket
@@ -53,7 +56,9 @@ class MainActivity : AppCompatActivity() {
             true -> "hora"
             false -> "data"
         }
-        ConexaoTask().execute(protocol)
+        lifecycleScope.launch {
+            conexaoTask(protocol)
+        }
     }
 
     override fun onStop() {
@@ -61,84 +66,51 @@ class MainActivity : AppCompatActivity() {
         clientSocket.close()
     }
 
-    inner class ConexaoTask : AsyncTask<String, Int, String>() {
-        override fun onPreExecute() {
+    suspend fun conexaoTask(protocol: String) {
+
+        withContext(Dispatchers.Main) {
             progressBar.visibility = View.VISIBLE
             btEnviar.isEnabled = false
         }
 
-        override fun doInBackground(vararg protocol: String?): String? {
+        var result = ""
+
+        withContext(Dispatchers.IO) {
             try {
                 Thread.sleep(1000)
-                if (!::clientSocket.isInitialized) {
 
+                if (!::clientSocket.isInitialized) {
                     val ip = BuildConfig.SERVER_IP
                     val port = BuildConfig.SERVER_PORT
 
-                    publishProgress(1)
-                    Thread.sleep(1000)
-
-                    clientSocket = Socket(ip, port) // linha bloqueante
-                    // Conectado com server
-
-                    publishProgress(2)
-                    Thread.sleep(1000)
+                    clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
+                    //Conectado com o Server
 
                     outputStream =
                         clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-
-                    publishProgress(3)
-                    Thread.sleep(1000)
-
                     inputStream =
                         clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                    // Fluxo de IO criado
-
-                    publishProgress(4)
-                    Thread.sleep(1000)
+                    //Fluxo de IO Criado
                 }
 
-                outputStream.write(protocol[0] + "\n")
 
-                publishProgress(5)
-                Thread.sleep(1000)
-
+                outputStream.write(protocol + "\n")
                 outputStream.flush()
-                // mensagem enviada ao servidor, sem bloqueios
+                //Mensagem enviada ao servidor, sem bloqueios
 
-                publishProgress(6)
-                Thread.sleep(1000)
-                val result = inputStream.readLine() // linha bloqueante
-                // mensagem recebida do servidor
-
-                publishProgress(7)
-                Thread.sleep(1000)
-
-                publishProgress(8)
-                Thread.sleep(1000)
-
-                publishProgress(9)
-                Thread.sleep(1000)
-
-                publishProgress(10)
-                Thread.sleep(1000)
-
-                return result
+                result = inputStream.readLine() //linha bloqueante
+                //mensagem recebida do servidor
             } catch (e: Exception) {
-                return e.message
+                result = e.message.toString()
             }
-        }
+        } //fim do Dispatchers.IO
 
-        override fun onPostExecute(result: String?) {
+
+        withContext(Dispatchers.Main) {
             tvResultado.text = result
             progressBar.visibility = View.GONE
             btEnviar.isEnabled = true
-
         }
 
-        override fun onProgressUpdate(vararg progresso: Int?) {
-            super.onProgressUpdate(*progresso)
-            progressBar.setProgress(progresso[0] ?: 0)
-        }
     }
 }
