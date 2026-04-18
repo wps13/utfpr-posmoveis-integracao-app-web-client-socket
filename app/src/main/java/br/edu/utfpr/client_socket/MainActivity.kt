@@ -15,6 +15,8 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.Socket
 import java.nio.charset.Charset
+import java.util.Timer
+import java.util.TimerTask
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvResultado: TextView
@@ -39,9 +41,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        lifecycleScope.launch {
-            conexaoTask("hora")
-        }
+        val timer = Timer()
+
+        timer.schedule(MinhaTimerTask("hora"), 0, 1000)
     }
 
     override fun onStop() {
@@ -50,43 +52,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend fun conexaoTask(protocol: String) {
-        while (true) {
-            var result = ""
-            withContext(Dispatchers.IO) {
-                try {
-                    delay(1000)
-                    if (!::clientSocket.isInitialized) {
-                        val ip = BuildConfig.SERVER_IP
-                        val port = BuildConfig.SERVER_PORT
+        var result = ""
+        withContext(Dispatchers.IO) {
+            try {
+                if (!::clientSocket.isInitialized) {
+                    val ip = BuildConfig.SERVER_IP
+                    val port = BuildConfig.SERVER_PORT
 
-                        clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
-                        //Conectado com o Server
+                    clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
+                    //Conectado com o Server
 
-                        outputStream =
-                            clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-                        inputStream =
-                            clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                        //Fluxo de IO Criado
-                    }
-
-
-                    outputStream.write(protocol + "\n")
-                    outputStream.flush()
-                    //Mensagem enviada ao servidor, sem bloqueios
-
-                    result = inputStream.readLine() //linha bloqueante
-                    //mensagem recebida do servidor
-                } catch (e: Exception) {
-                    result = e.message.toString()
+                    outputStream =
+                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
+                    inputStream =
+                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
+                    //Fluxo de IO Criado
                 }
-            } //fim do Dispatchers.IO
 
 
-            withContext(Dispatchers.Main) {
-                tvResultado.text = result
+                outputStream.write(protocol + "\n")
+                outputStream.flush()
+                //Mensagem enviada ao servidor, sem bloqueios
+
+                result = inputStream.readLine() //linha bloqueante
+                //mensagem recebida do servidor
+            } catch (e: Exception) {
+                result = e.message.toString()
             }
+        } //fim do Dispatchers.IO
+
+
+        withContext(Dispatchers.Main) {
+            tvResultado.text = result
         }
 
 
+    }
+
+    inner class MinhaTimerTask(msg: String) : TimerTask() {
+        override fun run() {
+            lifecycleScope.launch {
+                conexaoTask("hora")
+            }
+        }
     }
 }
