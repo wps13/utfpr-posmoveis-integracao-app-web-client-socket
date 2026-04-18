@@ -1,5 +1,6 @@
 package br.edu.utfpr.client_socket
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -21,10 +22,6 @@ import java.util.TimerTask
 class MainActivity : AppCompatActivity() {
     private lateinit var tvResultado: TextView
 
-    private lateinit var clientSocket: Socket
-    private lateinit var inputStream: BufferedReader
-    private lateinit var outputStream: BufferedWriter
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,59 +38,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val timer = Timer()
-
-        timer.schedule(MinhaTimerTask("hora"), 0, 1000)
+        val service = Intent(this, MyService::class.java)
+        startService(service)
     }
 
     override fun onStop() {
         super.onStop()
-        clientSocket.close()
-    }
-
-    suspend fun conexaoTask(protocol: String) {
-        var result = ""
-        withContext(Dispatchers.IO) {
-            try {
-                if (!::clientSocket.isInitialized) {
-                    val ip = BuildConfig.SERVER_IP
-                    val port = BuildConfig.SERVER_PORT
-
-                    clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
-                    //Conectado com o Server
-
-                    outputStream =
-                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-                    inputStream =
-                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                    //Fluxo de IO Criado
-                }
-
-
-                outputStream.write(protocol + "\n")
-                outputStream.flush()
-                //Mensagem enviada ao servidor, sem bloqueios
-
-                result = inputStream.readLine() //linha bloqueante
-                //mensagem recebida do servidor
-            } catch (e: Exception) {
-                result = e.message.toString()
-            }
-        } //fim do Dispatchers.IO
-
-
-        withContext(Dispatchers.Main) {
-            tvResultado.text = result
-        }
-
-
-    }
-
-    inner class MinhaTimerTask(msg: String) : TimerTask() {
-        override fun run() {
-            lifecycleScope.launch {
-                conexaoTask("hora")
-            }
-        }
     }
 }
