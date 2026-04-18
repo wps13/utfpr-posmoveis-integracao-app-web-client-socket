@@ -1,23 +1,13 @@
 package br.edu.utfpr.client_socket
 
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.net.Socket
-import java.nio.charset.Charset
-import java.util.Timer
-import java.util.TimerTask
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvResultado: TextView
@@ -38,8 +28,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val service = Intent(this, MyService::class.java)
-        startService(service)
+//        val service = Intent(this, MyService::class.java)
+//        startService(service)
+        val receiver = MyReceiver()
+        registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     override fun onStop() {
