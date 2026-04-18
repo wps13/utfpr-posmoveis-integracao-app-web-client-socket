@@ -1,10 +1,6 @@
 package br.edu.utfpr.client_socket
 
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.RadioButton
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +8,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -20,12 +17,7 @@ import java.net.Socket
 import java.nio.charset.Charset
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var rbData: RadioButton
-    private lateinit var rbHora: RadioButton
-    private lateinit var btEnviar: Button
     private lateinit var tvResultado: TextView
-
-    private lateinit var progressBar: ProgressBar
 
     private lateinit var clientSocket: Socket
     private lateinit var inputStream: BufferedReader
@@ -41,23 +33,14 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
-        rbData = findViewById(R.id.rbData)
-        rbHora = findViewById(R.id.rbHora)
-        btEnviar = findViewById(R.id.btEnviar)
         tvResultado = findViewById(R.id.tvResultado)
-        progressBar = findViewById(R.id.progressBar)
 
     }
 
-    fun btEnviarOnClick(view: View) {
-
-        val protocol = when (rbHora.isChecked) {
-            true -> "hora"
-            false -> "data"
-        }
+    override fun onStart() {
+        super.onStart()
         lifecycleScope.launch {
-            conexaoTask(protocol)
+            conexaoTask("hora")
         }
     }
 
@@ -67,50 +50,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend fun conexaoTask(protocol: String) {
+        while (true) {
+            var result = ""
+            withContext(Dispatchers.IO) {
+                try {
+                    delay(1000)
+                    if (!::clientSocket.isInitialized) {
+                        val ip = BuildConfig.SERVER_IP
+                        val port = BuildConfig.SERVER_PORT
 
-        withContext(Dispatchers.Main) {
-            progressBar.visibility = View.VISIBLE
-            btEnviar.isEnabled = false
-        }
+                        clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
+                        //Conectado com o Server
 
-        var result = ""
+                        outputStream =
+                            clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
+                        inputStream =
+                            clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
+                        //Fluxo de IO Criado
+                    }
 
-        withContext(Dispatchers.IO) {
-            try {
-                Thread.sleep(1000)
 
-                if (!::clientSocket.isInitialized) {
-                    val ip = BuildConfig.SERVER_IP
-                    val port = BuildConfig.SERVER_PORT
+                    outputStream.write(protocol + "\n")
+                    outputStream.flush()
+                    //Mensagem enviada ao servidor, sem bloqueios
 
-                    clientSocket = Socket(ip, port) //linha é bloqueante ou dará exceção
-                    //Conectado com o Server
-
-                    outputStream =
-                        clientSocket.getOutputStream().bufferedWriter(Charset.forName("utf-8"))
-                    inputStream =
-                        clientSocket.getInputStream().bufferedReader(Charset.forName("utf-8"))
-                    //Fluxo de IO Criado
+                    result = inputStream.readLine() //linha bloqueante
+                    //mensagem recebida do servidor
+                } catch (e: Exception) {
+                    result = e.message.toString()
                 }
+            } //fim do Dispatchers.IO
 
 
-                outputStream.write(protocol + "\n")
-                outputStream.flush()
-                //Mensagem enviada ao servidor, sem bloqueios
-
-                result = inputStream.readLine() //linha bloqueante
-                //mensagem recebida do servidor
-            } catch (e: Exception) {
-                result = e.message.toString()
+            withContext(Dispatchers.Main) {
+                tvResultado.text = result
             }
-        } //fim do Dispatchers.IO
-
-
-        withContext(Dispatchers.Main) {
-            tvResultado.text = result
-            progressBar.visibility = View.GONE
-            btEnviar.isEnabled = true
         }
+
 
     }
 }

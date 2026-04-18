@@ -9,46 +9,6 @@
     android:orientation="vertical"
     >
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:visibility="gone"
-        />
-
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tipo de dados:" />
-
-    <RadioGroup
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-        <RadioButton
-            android:id="@+id/rbData"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="Data" />
-        <RadioButton
-            android:id="@+id/rbHora"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="hora" />
-    </RadioGroup>
-
-    <Button
-        android:id="@+id/btEnviar"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:text="Enviar"
-        android:onClick="btEnviarOnClick"
-
-        />
     <TextView
         android:id="@+id/tvResultado"
         android:layout_width="wrap_content"
